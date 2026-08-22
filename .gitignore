@@ -47,4 +47,4 @@ coverage/
 # Docker
 docker-compose.override.yml
 .vercel
-package-lock.json
+
