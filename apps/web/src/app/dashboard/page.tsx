@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useUser, useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import Link from "next/link";
 
 export default function DashboardOverview() {
   const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const router = useRouter();
   const [hasBusiness, setHasBusiness] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +41,7 @@ export default function DashboardOverview() {
       try {
         const response = await fetch("/api/v1/auth/business", {
           headers: {
-            Authorization: `Bearer ${await user?.getToken()}`,
+            Authorization: `Bearer ${await getToken()}`,
           },
         });
 
