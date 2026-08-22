@@ -1,0 +1,52 @@
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install workspace dependencies
+COPY package.json package-lock.json* ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/db/package.json ./packages/db/
+COPY packages/ai/package.json ./packages/ai/
+COPY packages/payments/package.json ./packages/payments/
+COPY packages/messaging/package.json ./packages/messaging/
+COPY packages/types/package.json ./packages/types/
+RUN npm ci
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
+COPY . .
+
+# Generate Prisma Client
+RUN cd packages/db && npx prisma generate
+
+# Build the API
+RUN cd apps/api && npm run build
+
+# Production image, copy all the files and run the API
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 apiuser
+
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/package.json ./apps/api/
+COPY --from=builder /app/packages/db ./packages/db
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
+
+USER apiuser
+
+EXPOSE 3001
+
+ENV PORT 3001
+
+CMD ["node", "apps/api/dist/index.js"]

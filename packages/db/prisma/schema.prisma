@@ -1,0 +1,836 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// AUTH & USERS
+// ============================================================
+
+model User {
+  id            String   @id @default(cuid())
+  clerkId       String   @unique
+  email         String   @unique
+  firstName     String?
+  lastName      String?
+  avatarUrl     String?
+  phone         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  memberships   BusinessMember[]
+  apiKeys       ApiKey[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  sessions      ConversationSession[]
+
+  @@map("users")
+}
+
+// ============================================================
+// BUSINESSES & MULTI-TENANCY
+// ============================================================
+
+model Business {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  industry      String?
+  country       String   @default("NG")
+  currency      String   @default("NGN")
+  timezone      String   @default("Africa/Lagos")
+  address       String?
+  city          String?
+  state         String?
+  logoUrl       String?
+  phone         String?
+  email         String?
+  website       String?
+  taxRate       Decimal? @default(0) @db.Decimal(5, 2)
+  deliveryFee   Decimal? @default(0) @db.Decimal(10, 2)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  memberships       BusinessMember[]
+  products          Product[]
+  productCategories ProductCategory[]
+  customers         Customer[]
+  orders            Order[]
+  conversations     Conversation[]
+  automationRules   AutomationRule[]
+  integrations      Integration[]
+  subscriptions     Subscription[]
+  apiKeys           ApiKey[]
+  webhookEndpoints  WebhookEndpoint[]
+  deliveries        Delivery[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  inventory         Inventory[]
+  paymentAccounts   PaymentAccount[]
+  payments          Payment[]
+  sessions          ConversationSession[]
+
+  @@map("businesses")
+}
+
+model BusinessMember {
+  id          String   @id @default(cuid())
+  userId      String
+  businessId  String
+  role        Role     @default(STAFF)
+  isOwner     Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  invitedAt   DateTime @default(now())
+  acceptedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+  @@map("business_members")
+}
+
+enum Role {
+  PLATFORM_OWNER
+  BUSINESS_OWNER
+  MANAGER
+  STAFF
+}
+
+// ============================================================
+// PRODUCTS & CATEGORIES
+// ============================================================
+
+model ProductCategory {
+  id          String   @id @default(cuid())
+  businessId  String
+  name        String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([businessId, name])
+  @@map("product_categories")
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  businessId      String
+  categoryId      String?
+  name            String
+  slug            String
+  sku             String?
+  description     String?
+  price           Decimal  @db.Decimal(10, 2)
+  costPrice       Decimal? @db.Decimal(10, 2)
+  unit            String   @default("piece")
+  imageUrl        String?
+  isActive        Boolean  @default(true)
+  aliases         String[]
+  lowStockThreshold Int?   @default(10)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  business     Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category     ProductCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  orderItems   OrderItem[]
+  inventory    Inventory?
+  customerPrices CustomerPrice[]
+
+  @@unique([businessId, sku])
+  @@unique([businessId, slug])
+  @@map("products")
+}
+
+// ============================================================
+// INVENTORY
+// ============================================================
+
+model Inventory {
+  id            String   @id @default(cuid())
+  productId     String   @unique
+  businessId    String
+  stockOnHand   Int      @default(0)
+  reservedStock Int      @default(0)
+  unit          String   @default("piece")
+  lowStockThreshold Int  @default(10)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  business  Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  movements InventoryMovement[]
+  reservations InventoryReservation[]
+
+  @@map("inventory")
+}
+
+model InventoryMovement {
+  id          String   @id @default(cuid())
+  inventoryId String
+  type        MovementType
+  quantity    Int
+  reference   String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  inventory Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  @@map("inventory_movements")
+}
+
+model InventoryReservation {
+  id        String   @id @default(cuid())
+  inventoryId String
+  orderId   String
+  quantity  Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  inventory Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("inventory_reservations")
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  RESERVATION
+  RELEASE
+}
+
+// ============================================================
+// CUSTOMERS
+// ============================================================
+
+model Customer {
+  id            String   @id @default(cuid())
+  businessId    String
+  name          String
+  phone         String?
+  email         String?
+  address       String?
+  notes         String?
+  tags          String[]
+  segment       CustomerSegment @default(NEW)
+  totalSpend    Decimal  @default(0) @db.Decimal(10, 2)
+  orderCount    Int      @default(0)
+  lastOrderAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  orders         Order[]
+  addresses      CustomerAddress[]
+  conversations  Conversation[]
+  prices         CustomerPrice[]
+  sessions       ConversationSession[]
+
+  @@unique([businessId, phone])
+  @@unique([businessId, email])
+  @@map("customers")
+}
+
+model CustomerAddress {
+  id         String  @id @default(cuid())
+  customerId String
+  label      String  @default("default")
+  address    String
+  city       String?
+  state      String?
+  country    String?
+  isDefault  Boolean @default(false)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_addresses")
+}
+
+model CustomerPrice {
+  id         String  @id @default(cuid())
+  customerId String
+  productId  String
+  price      Decimal @db.Decimal(10, 2)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, productId])
+  @@map("customer_prices")
+}
+
+enum CustomerSegment {
+  NEW
+  ACTIVE
+  VIP
+  INACTIVE
+  HIGH_VALUE
+  OVERDUE
+}
+
+// ============================================================
+// ORDERS
+// ============================================================
+
+model Order {
+  id              String   @id @default(cuid())
+  businessId      String
+  customerId      String?
+  orderNumber     String
+  source          OrderSource @default(WEB)
+  status          OrderStatus @default(DRAFT)
+  paymentStatus   PaymentStatus @default(UNPAID)
+  fulfillmentStatus FulfillmentStatus @default(PENDING)
+  
+  subtotal        Decimal  @db.Decimal(10, 2)
+  discountAmount  Decimal  @default(0) @db.Decimal(10, 2)
+  taxAmount       Decimal  @default(0) @db.Decimal(10, 2)
+  deliveryFee     Decimal  @default(0) @db.Decimal(10, 2)
+  totalAmount     Decimal  @db.Decimal(10, 2)
+  
+  notes           String?
+  internalNotes   String?
+  
+  confirmedAt     DateTime?
+  paidAt          DateTime?
+  fulfilledAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  business        Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer        Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items           OrderItem[]
+  payments        Payment[]
+  delivery        Delivery?
+  inventoryReservations InventoryReservation[]
+  conversation    Conversation?     @relation(fields: [conversationId], references: [id])
+
+  conversationId  String?
+
+  @@unique([businessId, orderNumber])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  total     Decimal @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@map("order_items")
+}
+
+enum OrderSource {
+  WHATSAPP
+  WEB
+  API
+  PHONE
+  IN_STORE
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING_CONFIRMATION
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  READY_FOR_FULFILLMENT
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELLED
+  REFUNDED
+  FAILED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum FulfillmentStatus {
+  PENDING
+  PROCESSING
+  READY
+  SHIPPED
+  DELIVERED
+  FAILED
+}
+
+// ============================================================
+// PAYMENTS
+// ============================================================
+
+model PaymentAccount {
+  id          String   @id @default(cuid())
+  businessId  String
+  provider    PaymentProvider
+  reference   String
+  isActive    Boolean  @default(true)
+  config      Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("payment_accounts")
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  orderId       String
+  businessId    String
+  provider      PaymentProvider
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("NGN")
+  status        PaymentRecordStatus @default(PENDING)
+  reference     String   @unique
+  providerRef   String?
+  metadata      Json     @default("{}")
+  paidAt        DateTime?
+  failedAt      DateTime?
+  failureReason String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  order  Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  business Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  events PaymentEvent[]
+
+  @@map("payments")
+}
+
+model PaymentEvent {
+  id        String   @id @default(cuid())
+  paymentId String
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@map("payment_events")
+}
+
+enum PaymentProvider {
+  PAYSTACK
+  STRIPE
+  FLUTTERWAVE
+}
+
+enum PaymentRecordStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+// ============================================================
+// CONVERSATIONS & MESSAGES
+// ============================================================
+
+model Conversation {
+  id          String   @id @default(cuid())
+  businessId  String
+  customerId  String?
+  channel     ConversationChannel
+  status      ConversationStatus @default(ACTIVE)
+  context     Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business   Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer   Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  messages   Message[]
+  orders     Order[]
+
+  @@map("conversations")
+}
+
+model ConversationSession {
+  id            String   @id @default(cuid())
+  businessId    String
+  customerId    String?
+  userId        String?
+  channel       ConversationChannel
+  state         Json     @default("{}")
+  isActive      Boolean  @default(true)
+  lastActivity  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("conversation_sessions")
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  conversationId  String
+  direction       MessageDirection
+  content         String
+  messageType     MessageType @default(TEXT)
+  metadata        Json     @default("{}")
+  sentAt          DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+enum ConversationChannel {
+  WHATSAPP
+  WEB
+  API
+  SMS
+  EMAIL
+  TELEGRAM
+}
+
+enum ConversationStatus {
+  ACTIVE
+  WAITING
+  CLOSED
+  ARCHIVED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  DOCUMENT
+  PAYMENT_REQUEST
+  ORDER_CONFIRMATION
+  SYSTEM
+}
+
+// ============================================================
+// AUTOMATION
+// ============================================================
+
+model AutomationRule {
+  id          String   @id @default(cuid())
+  businessId  String
+  name        String
+  description String?
+  trigger     AutomationTrigger
+  conditions  Json     @default("[]")
+  actions     Json     @default("[]")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  runs     AutomationRun[]
+
+  @@map("automation_rules")
+}
+
+model AutomationRun {
+  id        String   @id @default(cuid())
+  ruleId    String
+  status    AutomationRunStatus @default(PENDING)
+  input     Json     @default("{}")
+  output    Json     @default("{}")
+  error     String?
+  startedAt DateTime?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+
+  rule AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@map("automation_runs")
+}
+
+enum AutomationTrigger {
+  ORDER_CREATED
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  LOW_INVENTORY
+  CUSTOMER_INACTIVE
+  DELIVERY_COMPLETED
+  INVOICE_OVERDUE
+  MANUAL
+}
+
+enum AutomationRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// ============================================================
+// DELIVERIES
+// ============================================================
+
+model Delivery {
+  id              String   @id @default(cuid())
+  businessId      String
+  orderId         String   @unique
+  address         String
+  recipientName   String?
+  recipientPhone  String?
+  driverName      String?
+  driverPhone     String?
+  deliveryFee     Decimal? @db.Decimal(10, 2)
+  trackingRef     String?
+  status          DeliveryStatus @default(PENDING)
+  estimatedDate   DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("deliveries")
+}
+
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  businessId String?
+  type      NotificationType
+  title     String
+  message   String
+  data      Json     @default("{}")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  ORDER_CREATED
+  ORDER_CONFIRMED
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  LOW_INVENTORY
+  INVOICE_OVERDUE
+  SYSTEM
+}
+
+// ============================================================
+// SUBSCRIPTIONS & BILLING
+// ============================================================
+
+model Subscription {
+  id            String   @id @default(cuid())
+  businessId    String
+  planId        String
+  status        SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAt      DateTime?
+  canceledAt    DateTime?
+  usage         Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invoices SubscriptionInvoice[]
+
+  @@map("subscriptions")
+}
+
+model SubscriptionInvoice {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  amount         Decimal  @db.Decimal(10, 2)
+  currency       String   @default("NGN")
+  status         InvoiceStatus @default(PENDING)
+  paidAt         DateTime?
+  dueDate        DateTime
+  createdAt      DateTime @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@map("subscription_invoices")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  TRIALING
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  VOID
+}
+
+// ============================================================
+// API KEYS
+// ============================================================
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  userId    String
+  businessId String?
+  name      String
+  keyHash   String   @unique
+  prefix    String
+  scopes    String[]
+  isActive  Boolean  @default(true)
+  lastUsedAt DateTime?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+// ============================================================
+// WEBHOOKS
+// ============================================================
+
+model WebhookEndpoint {
+  id          String   @id @default(cuid())
+  businessId  String
+  url         String
+  events      String[]
+  secret      String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id           String   @id @default(cuid())
+  endpointId   String
+  event        String
+  payload      Json
+  status       WebhookDeliveryStatus @default(PENDING)
+  attempts     Int      @default(0)
+  lastAttemptAt DateTime?
+  successAt    DateTime?
+  error        String?
+  createdAt    DateTime @default(now())
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@map("webhook_deliveries")
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+// ============================================================
+// INTEGRATIONS
+// ============================================================
+
+model Integration {
+  id          String   @id @default(cuid())
+  businessId  String
+  type        IntegrationType
+  config      Json     @default("{}")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, type])
+  @@map("integrations")
+}
+
+enum IntegrationType {
+  WHATSAPP
+  PAYSTACK
+  STRIPE
+  EMAIL
+  SMS
+  DELIVERY
+  ACCOUNTING
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  businessId  String?
+  userId      String?
+  action      String
+  resource    String
+  resourceId  String?
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}

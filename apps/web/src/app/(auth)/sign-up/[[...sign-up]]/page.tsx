@@ -1,0 +1,100 @@
+"use client";
+
+import { SignUp } from "@clerk/nextjs";
+import Link from "next/link";
+
+export default function SignUpPage() {
+  return (
+    <div className="min-h-screen flex">
+      {/* Left side - Branding */}
+      <div className="hidden lg:flex lg:flex-1 bg-primary flex-col justify-between p-12">
+        <div>
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+              <span className="text-primary font-bold text-lg">OF</span>
+            </div>
+            <span className="text-2xl font-bold text-white">OrderFlow</span>
+          </Link>
+        </div>
+
+        <div className="text-white">
+          <h2 className="text-3xl font-bold mb-4">
+            Start automating your business today
+          </h2>
+          <p className="text-lg text-white/80 mb-8">
+            Join thousands of businesses using OrderFlow to manage orders, payments, and fulfillment.
+          </p>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <span>✓</span>
+              </div>
+              <span>Free to start - no credit card required</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <span>✓</span>
+              </div>
+              <span>WhatsApp ordering out of the box</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <span>✓</span>
+              </div>
+              <span>AI-powered order processing</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-white/60 text-sm">
+          © 2024 OrderFlow. All rights reserved.
+        </div>
+      </div>
+
+      {/* Right side - Sign Up Form */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          {/* Mobile logo */}
+          <div className="lg:hidden mb-8">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-lg">OF</span>
+              </div>
+              <span className="text-2xl font-bold">OrderFlow</span>
+            </Link>
+          </div>
+
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold">Create your account</h1>
+            <p className="text-muted-foreground mt-1">
+              Start your free trial today
+            </p>
+          </div>
+
+          <SignUp
+            routing="hash"
+            appearance={{
+              elements: {
+                formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90",
+                card: "shadow-none border",
+                headerTitle: "hidden",
+                headerSubtitle: "hidden",
+                socialButtonsBlockButton: "border",
+                dividerLine: "bg-border",
+                formFieldInput: "border-input",
+              },
+            }}
+          />
+
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Already have an account?{" "}
+            <Link href="/sign-in" className="text-primary hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
