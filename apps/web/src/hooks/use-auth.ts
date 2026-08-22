@@ -8,11 +8,12 @@ import { useEffect, useState } from "react";
  * Hook for authentication state and methods
  */
 export function useAuthState() {
-  const { isLoaded, isSignedIn, user, getToken } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { user, isLoaded: isUserLoaded } = useUser();
   const { organization, isLoaded: isOrgLoaded } = useOrganization();
 
   return {
-    isLoading: !isLoaded || !isOrgLoaded,
+    isLoading: !isLoaded || !isUserLoaded || !isOrgLoaded,
     isSignedIn,
     user,
     organization,
