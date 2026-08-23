@@ -1,16 +1,29 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
-import { MessageSquare, CreditCard, Mail, Truck, Calculator, ExternalLink } from "lucide-react";
+import {
+  DashboardLayout,
+  useDashboardHeader,
+} from "@/components/layout/dashboard-layout";
+import {
+  MessageSquare,
+  CreditCard,
+  Mail,
+  Truck,
+  Calculator,
+  ExternalLink,
+  Check,
+} from "lucide-react";
 
 const availableIntegrations = [
   {
     id: "whatsapp",
     name: "WhatsApp Business",
-    description: "Receive and respond to customer orders via WhatsApp",
+    description:
+      "Receive and respond to customer orders via WhatsApp",
     icon: MessageSquare,
     category: "Messaging",
     docsUrl: "https://developers.facebook.com/docs/whatsapp",
@@ -18,7 +31,8 @@ const availableIntegrations = [
   {
     id: "paystack",
     name: "Paystack",
-    description: "Accept payments via card, bank transfer, and USSD",
+    description:
+      "Accept payments via card, bank transfer, and USSD",
     icon: CreditCard,
     category: "Payments",
     docsUrl: "https://paystack.com/docs",
@@ -26,7 +40,8 @@ const availableIntegrations = [
   {
     id: "email",
     name: "Email Notifications",
-    description: "Send order confirmations and updates via email",
+    description:
+      "Send order confirmations and updates via email",
     icon: Mail,
     category: "Notifications",
     docsUrl: "#",
@@ -42,38 +57,67 @@ const availableIntegrations = [
   {
     id: "accounting",
     name: "Accounting Software",
-    description: "Sync transactions with your accounting system",
+    description:
+      "Sync transactions with your accounting system",
     icon: Calculator,
     category: "Finance",
     docsUrl: "#",
   },
 ];
 
-const categories = ["All", "Messaging", "Payments", "Notifications", "Logistics", "Finance"];
+const categories = [
+  "All",
+  "Messaging",
+  "Payments",
+  "Notifications",
+  "Logistics",
+  "Finance",
+];
 
 export default function IntegrationsPage() {
+  const setHeader = useDashboardHeader();
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [connected, setConnected] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setHeader({
+      title: "Integrations",
+      description: "Connect OrderFlow with your favorite tools",
+    });
+    return () => setHeader({ title: undefined, description: undefined });
+  }, [setHeader]);
+
+  const filtered =
+    activeCategory === "All"
+      ? availableIntegrations
+      : availableIntegrations.filter((i) => i.category === activeCategory);
+
+  const handleConnect = (id: string) => {
+    setConnected((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   return (
-    <DashboardLayout
-      title="Integrations"
-      description="Connect OrderFlow with your favorite tools"
-    >
+    <DashboardLayout>
       {/* Category Filters */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto">
-        {categories.map((category, index) => (
+      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+        {categories.map((category) => (
           <Button
             key={category}
-            variant={index === 0 ? "default" : "outline"}
+            variant={activeCategory === category ? "default" : "outline"}
             size="sm"
+            onClick={() => setActiveCategory(category)}
+            className="shrink-0"
           >
             {category}
           </Button>
         ))}
       </div>
 
-      {/* Available Integrations */}
+      {/* Integrations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {availableIntegrations.map((integration) => {
+        {filtered.map((integration) => {
           const Icon = integration.icon;
+          const isConnected = connected[integration.id];
           return (
             <Card key={integration.id}>
               <CardHeader className="pb-3">
@@ -83,7 +127,9 @@ export default function IntegrationsPage() {
                       <Icon className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <CardTitle className="text-base">{integration.name}</CardTitle>
+                      <CardTitle className="text-base">
+                        {integration.name}
+                      </CardTitle>
                       <Badge variant="secondary" className="mt-1">
                         {integration.category}
                       </Badge>
@@ -96,20 +142,44 @@ export default function IntegrationsPage() {
                   {integration.description}
                 </p>
                 <div className="flex gap-2">
-                  <Button className="flex-1">
-                    Connect
+                  <Button
+                    className="flex-1"
+                    variant={isConnected ? "outline" : "default"}
+                    onClick={() => handleConnect(integration.id)}
+                  >
+                    {isConnected ? (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Connected
+                      </>
+                    ) : (
+                      "Connect"
+                    )}
                   </Button>
-                  <Button variant="ghost" size="icon" asChild>
-                    <a href={integration.docsUrl} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={integration.docsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="ghost" size="icon">
                       <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
+                    </Button>
+                  </a>
                 </div>
               </CardContent>
             </Card>
           );
         })}
       </div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p className="text-lg mb-2">No integrations found</p>
+          <p className="text-sm">
+            Try selecting a different category
+          </p>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
