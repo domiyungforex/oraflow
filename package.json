@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@tanstack/query-core": "^5.102.0",
-    "caniuse-lite": "^1.0.30001809"
+    "caniuse-lite": "^1.0.30001809",
+    "svix": "^2.0.0"
   }
 }
