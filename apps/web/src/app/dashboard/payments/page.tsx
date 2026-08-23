@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,13 +13,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
 import { formatCurrency } from "@/lib/utils";
 import { usePayments } from "@/hooks/use-api";
 import { Search, Filter, Download, CreditCard, TrendingUp, Clock, AlertCircle } from "lucide-react";
 
 export default function PaymentsPage() {
   const [status, setStatus] = useState<string | undefined>(undefined);
+
+  const setHeader = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Payments",
+      description: "Track and manage payment transactions",
+    });
+    return () => setHeader({ title: undefined, description: undefined });
+  }, [setHeader]);
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = usePayments({ page, limit: 20, status });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,12 +13,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
 import { useInventory } from "@/hooks/use-api";
 import { Search, AlertTriangle, Package } from "lucide-react";
 
 export default function InventoryPage() {
   const [search, setSearch] = useState("");
+
+  const setHeader = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Inventory",
+      description: "Track and manage your stock levels",
+    });
+    return () => setHeader({ title: undefined, description: undefined });
+  }, [setHeader]);
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useInventory({ page, limit: 20 });

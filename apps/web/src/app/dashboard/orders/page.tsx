@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
 import { formatCurrency, getStatusColor } from "@/lib/utils";
 import { useOrders } from "@/hooks/use-api";
 import { Search, Filter, Plus } from "lucide-react";
@@ -31,6 +31,15 @@ const statusFilters = [
 
 export default function OrdersPage() {
   const [search, setSearch] = useState("");
+
+  const setHeader = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Orders",
+      description: "Manage all customer orders",
+    });
+    return () => setHeader({ title: undefined, description: undefined });
+  }, [setHeader]);
   const [status, setStatus] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(1);
 

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
 import { Save } from "lucide-react";
 
 export default function SettingsPage() {

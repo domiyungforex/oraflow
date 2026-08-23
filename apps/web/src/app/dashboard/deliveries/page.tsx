@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
 import { useOrders } from "@/hooks/use-api";
 import { Search, Filter, Truck, MapPin, Clock, CheckCircle } from "lucide-react";
 
@@ -33,6 +33,15 @@ const statusColors: Record<string, string> = {
 
 export default function DeliveriesPage() {
   const [status, setStatus] = useState<string | undefined>(undefined);
+
+  const setHeader = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Deliveries",
+      description: "Track and manage order deliveries",
+    });
+    return () => setHeader({ title: undefined, description: undefined });
+  }, [setHeader]);
   const [page, setPage] = useState(1);
 
   // Use orders with delivery-related statuses

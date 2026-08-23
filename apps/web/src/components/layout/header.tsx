@@ -1,10 +1,8 @@
 "use client";
 
-import { Bell, Search, Menu } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   title?: string;
@@ -21,46 +19,68 @@ export function Header({
   showMobileMenu,
   onMobileMenuToggle,
 }: HeaderProps) {
+  const [showNotifications, setShowNotifications] = useState(false);
+
   return (
-    <header className="border-b bg-card">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-4">
+    <header className="border-b bg-card shrink-0">
+      <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4">
+        <div className="flex items-center gap-3 min-w-0">
           {showMobileMenu && (
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
+              className="lg:hidden shrink-0"
               onClick={onMobileMenuToggle}
             >
               <Menu className="h-5 w-5" />
             </Button>
           )}
-          <div>
-            {title && <h1 className="text-xl font-semibold">{title}</h1>}
+          <div className="min-w-0">
+            {title && (
+              <h1 className="text-lg md:text-xl font-semibold truncate">
+                {title}
+              </h1>
+            )}
             {description && (
-              <p className="text-sm text-muted-foreground">{description}</p>
+              <p className="text-sm text-muted-foreground truncate hidden sm:block">
+                {description}
+              </p>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Search */}
-          <div className="hidden md:flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search..."
-                className="pl-9 w-64"
-              />
-            </div>
+        <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          {/* Notifications */}
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+            </Button>
+
+            {/* Notifications dropdown */}
+            {showNotifications && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowNotifications(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-lg shadow-lg z-50">
+                  <div className="p-4 border-b">
+                    <h3 className="font-semibold">Notifications</h3>
+                  </div>
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    <p>No new notifications</p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-          </Button>
-
-          {/* Actions */}
+          {/* Page actions */}
           {actions}
         </div>
       </div>

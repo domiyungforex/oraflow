@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
 import { formatCurrency } from "@/lib/utils";
 import { useBusiness } from "@/hooks/use-api";
 import { CreditCard, Check, Crown, ArrowRight } from "lucide-react";

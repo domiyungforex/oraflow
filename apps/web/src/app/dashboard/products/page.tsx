@@ -1,17 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
 import { formatCurrency } from "@/lib/utils";
 import { useProducts } from "@/hooks/use-api";
 import { Search, Plus, Upload, Grid, List } from "lucide-react";
 
 export default function ProductsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  const setHeader = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Products",
+      description: "Manage your product catalog",
+    });
+    return () => setHeader({ title: undefined, description: undefined });
+  }, [setHeader]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 

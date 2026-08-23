@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
 import { formatCurrency, getStatusColor, formatDateTime } from "@/lib/utils";
 import {
   useOrder,
@@ -78,6 +78,15 @@ export default function OrderDetailPage() {
   const deleteOrder = useDeleteOrder();
 
   const [showStatusDialog, setShowStatusDialog] = useState(false);
+
+  const setHeader = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Order Details",
+      description: "Loading...",
+    });
+    return () => setHeader({ title: undefined, description: undefined });
+  }, [setHeader]);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [statusReason, setStatusReason] = useState("");
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);

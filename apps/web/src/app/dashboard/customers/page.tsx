@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
 import { formatCurrency } from "@/lib/utils";
 import { useCustomers } from "@/hooks/use-api";
 import { Search, Plus, Filter } from "lucide-react";
@@ -29,6 +29,15 @@ const segmentColors: Record<string, string> = {
 
 export default function CustomersPage() {
   const [search, setSearch] = useState("");
+
+  const setHeader = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Customers",
+      description: "Manage your customer relationships",
+    });
+    return () => setHeader({ title: undefined, description: undefined });
+  }, [setHeader]);
   const [segment, setSegment] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(1);
 

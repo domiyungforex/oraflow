@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
 import { useUser } from "@clerk/nextjs";
 import { useBusinessMembers, useInviteMember } from "@/hooks/use-api";
 import { Search, UserPlus, Shield, Mail } from "lucide-react";
@@ -34,6 +34,15 @@ const roleColors: Record<string, string> = {
 export default function TeamPage() {
   const { user } = useUser();
   const [showInviteForm, setShowInviteForm] = useState(false);
+
+  const setHeader = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Team",
+      description: "Manage your team members and permissions",
+    });
+    return () => setHeader({ title: undefined, description: undefined });
+  }, [setHeader]);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("STAFF");
 

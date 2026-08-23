@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardLayout, useDashboardHeader } from "@/components/layout/dashboard-layout";
 import { formatCurrency, getStatusColor } from "@/lib/utils";
 import { useOrders, useBusiness } from "@/hooks/use-api";
 import Link from "next/link";
@@ -24,6 +24,15 @@ export default function DashboardOverview() {
   const { getToken } = useAuth();
   const router = useRouter();
   const [hasBusiness, setHasBusiness] = useState<boolean | null>(null);
+
+  const setHeader = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Overview",
+      description: `Welcome back, ${user?.firstName || "there"}`,
+    });
+    return () => setHeader({ title: undefined, description: undefined });
+  }, [setHeader]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch real data

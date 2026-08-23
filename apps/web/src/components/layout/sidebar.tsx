@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: "📊" },
@@ -23,21 +23,27 @@ const navigation = [
   { name: "Settings", href: "/dashboard/settings", icon: "⚙️" },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export function Sidebar({ onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useUser();
   const { signOut } = useClerk();
 
-  const userInitials = user?.firstName && user?.lastName
-    ? `${user.firstName[0]}${user.lastName[0]}`
-    : user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() || "U";
+  const userInitials =
+    user?.firstName && user?.lastName
+      ? `${user.firstName[0]}${user.lastName[0]}`
+      : user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() || "U";
 
-  const displayName = user?.firstName && user?.lastName
-    ? `${user.firstName} ${user.lastName}`
-    : user?.emailAddresses?.[0]?.emailAddress || "User";
+  const displayName =
+    user?.firstName && user?.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : user?.emailAddresses?.[0]?.emailAddress || "User";
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:border-r bg-card">
+    <aside className="flex flex-col w-64 h-full border-r bg-card">
       {/* Logo */}
       <div className="flex items-center gap-2 px-6 py-5 border-b">
         <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -50,12 +56,14 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto py-4">
         <div className="px-3 space-y-1">
           {navigation.map((item) => {
-            const isActive = pathname === item.href || 
+            const isActive =
+              pathname === item.href ||
               (item.href !== "/dashboard" && pathname?.startsWith(item.href));
             return (
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                   isActive
@@ -64,7 +72,7 @@ export function Sidebar() {
                 )}
               >
                 <span className="text-lg">{item.icon}</span>
-                {item.name}
+                <span className="truncate">{item.name}</span>
               </Link>
             );
           })}
@@ -81,8 +89,10 @@ export function Sidebar() {
               className="w-9 h-9 rounded-full"
             />
           ) : (
-            <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-primary">{userInitials}</span>
+            <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+              <span className="text-sm font-medium text-primary">
+                {userInitials}
+              </span>
             </div>
           )}
           <div className="flex-1 min-w-0">
@@ -93,7 +103,7 @@ export function Sidebar() {
           </div>
           <button
             onClick={() => signOut()}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground shrink-0"
             title="Sign out"
           >
             <LogOut className="h-4 w-4" />
