@@ -124,7 +124,7 @@ export function useTeam() {
   const inviteMember = async (email: string, role: "org:admin" | "org:member") => {
     if (!organization) return;
 
-    await organization.inviteMember({ email, role });
+    await organization.inviteMember({ emailAddress: email, role });
   };
 
   const removeMember = async (memberId: string) => {
@@ -139,7 +139,7 @@ export function useTeam() {
   ) => {
     if (!organization) return;
 
-    await organization.updateMember(memberId, { role });
+    await organization.updateMember({ userId: memberId, role });
   };
 
   return {

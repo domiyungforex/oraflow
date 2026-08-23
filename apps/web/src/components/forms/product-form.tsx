@@ -375,7 +375,7 @@ export function ProductForm({ open, onClose, product, onSuccess }: ProductFormPr
             </div>
 
             {/* Profit Preview */}
-            {formData.price > 0 && formData.costPrice > 0 && (
+            {formData.price > 0 && (formData.costPrice ?? 0) > 0 && (
               <div className="bg-muted/50 rounded-lg p-4">
                 <h3 className="text-sm font-medium mb-2">Profit Preview</h3>
                 <div className="grid grid-cols-3 gap-4 text-sm">
@@ -385,12 +385,12 @@ export function ProductForm({ open, onClose, product, onSuccess }: ProductFormPr
                   </div>
                   <div>
                     <p className="text-muted-foreground">Cost Price</p>
-                    <p className="font-medium">₦{formData.costPrice.toLocaleString()}</p>
+                    <p className="font-medium">₦{(formData.costPrice ?? 0).toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Profit per Unit</p>
                     <p className="font-medium text-green-600">
-                      ₦{(formData.price - formData.costPrice).toLocaleString()}
+                      ₦{(formData.price - (formData.costPrice ?? 0)).toLocaleString()}
                     </p>
                   </div>
                 </div>

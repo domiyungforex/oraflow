@@ -8,6 +8,8 @@ const inter = Inter({
   variable: "--font-sans",
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "OrderFlow — Business Automation Platform",
   description:
