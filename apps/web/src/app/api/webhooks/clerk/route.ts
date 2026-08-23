@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "svix";
 import { headers } from "next/headers";
-
-// We need to use the raw database URL for this route since Prisma
-// runs server-side only
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
+import { db } from "@orderflow/db";
 
 const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
 
@@ -41,14 +36,13 @@ async function handleUserCreated(event: ClerkWebhookEvent) {
     return;
   }
 
-  // Check if user already exists
-  const existing = await prisma.user.findUnique({
+  const existing = await db.user.findUnique({
     where: { clerkId: id },
   });
 
   if (existing) {
     console.log("User already exists, updating:", id);
-    await prisma.user.update({
+    await db.user.update({
       where: { clerkId: id },
       data: {
         email: primaryEmail.email_address,
@@ -61,8 +55,7 @@ async function handleUserCreated(event: ClerkWebhookEvent) {
     return;
   }
 
-  // Create new user
-  await prisma.user.create({
+  await db.user.create({
     data: {
       clerkId: id,
       email: primaryEmail.email_address,
@@ -81,7 +74,7 @@ async function handleUserUpdated(event: ClerkWebhookEvent) {
 
   const primaryEmail = email_addresses?.[0];
 
-  await prisma.user.updateMany({
+  await db.user.updateMany({
     where: { clerkId: id },
     data: {
       email: primaryEmail?.email_address || undefined,
@@ -97,15 +90,7 @@ async function handleUserUpdated(event: ClerkWebhookEvent) {
 
 async function handleUserDeleted(event: ClerkWebhookEvent) {
   const { id } = event.data;
-
-  // Soft approach: just log it. Don't delete user data to preserve order history.
   console.log("User deleted in Clerk:", id, "- keeping database record for audit trail");
-
-  // Optionally remove clerkId reference
-  // await prisma.user.updateMany({
-  //   where: { clerkId: id },
-  //   data: { clerkId: null },
-  // });
 }
 
 export async function POST(req: NextRequest) {
@@ -125,7 +110,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
   }
 
-  // Verify webhook signature
   const wh = new Webhook(webhookSecret);
   let event: ClerkWebhookEvent;
 
@@ -140,7 +124,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // Handle events
   try {
     switch (event.type) {
       case "user.created":
@@ -159,7 +142,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Error processing webhook:", error);
-    // Return 200 to prevent Clerk from retrying
     return NextResponse.json({ received: true, error: "Internal error" });
   }
 }
